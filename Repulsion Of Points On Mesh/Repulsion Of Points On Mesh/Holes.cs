@@ -23,7 +23,8 @@
         double radius;
         double force;
         double brightness;
-        double colourSensitivity;
+        double colourSensitivityRepulsion;
+        double colourSensitivityRadius;
         MeshColourHelper ColourMethod = new MeshColourHelper();
 
         /// <summary>
@@ -36,8 +37,8 @@
         /// <param name="tempForce">Force with which holes are influencing each other</param>
         /// <param name="tempVertices">All vertices of mesh</param>
         /// <param name="tempBrightness">Brightness of hole</param>
-        /// <param name="tempColourSensitivity">Sensitivity of which a colour will affect the force between two points</param>
-        public Hole(Point3d tempPoint, Vector3d tempVelocityVector, Mesh tempMesh, double tempRadius, double tempForce, Point3d[] tempVertices, double tempBrightness, double tempColourSensitivity)
+        /// <param name="tempColourSensitivityRepulsion">Sensitivity of which a colour will affect the force between two points</param>
+        public Hole(Point3d tempPoint, Vector3d tempVelocityVector, Mesh tempMesh, double tempRadius, double tempForce, Point3d[] tempVertices, double tempBrightness, double tempColourSensitivityRepulsion, double tempColourSensitivityRadius)
         {
             vertices = tempVertices;
             point = tempPoint;
@@ -46,7 +47,8 @@
             radius = tempRadius;
             force = tempForce;
             brightness = tempBrightness;
-            colourSensitivity = tempColourSensitivity;
+            colourSensitivityRepulsion = tempColourSensitivityRepulsion;
+            colourSensitivityRadius = tempColourSensitivityRadius;
         }
 
         /// <summary>
@@ -109,7 +111,7 @@
 
         private Vector3d AdjustAccelerationForColourSensitivity(Vector3d vectorBetweenPoints, Hole other)
         {
-            return (1 - this.colourSensitivity) * vectorBetweenPoints + this.colourSensitivity * other.brightness * vectorBetweenPoints;
+            return (1 - this.colourSensitivityRepulsion) * vectorBetweenPoints + this.colourSensitivityRepulsion * other.brightness * vectorBetweenPoints;
         }
 
         /// <summary>
@@ -147,7 +149,7 @@
 
         private void CalculateNewRadius()
         {
-            this.radius = this.radius * (1 - this.brightness) * 1.5;
+            this.radius = this.radius * (1 - colourSensitivityRadius) + this.radius * (1 - this.brightness) * colourSensitivityRadius;
         }
 
         int recursionsStopper; //safety variable to avoid endless recursions.

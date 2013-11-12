@@ -32,10 +32,11 @@
             pManager.AddPointParameter("Points", "P", "List of points for repulsion", GH_ParamAccess.list);
             pManager.AddNumberParameter("Radius", "R", "Radius of points", GH_ParamAccess.list);
             pManager.AddMeshParameter("Mesh", "M", "Mesh on which points will move.", GH_ParamAccess.item);
-            pManager.AddNumberParameter("Damping", "D", "Damping the system. If damping=1, the system will keep running", GH_ParamAccess.item, 0.99);
+            pManager.AddNumberParameter("Damping", "D", "Damping the system. If damping=1, the system will keep running", GH_ParamAccess.item, 0.95);
             pManager.AddNumberParameter("Force", "F", "Force working between points", GH_ParamAccess.item, 15);
             pManager.AddColourParameter("Colour", "C", "Vertex Colours in same order as vertices", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Colour Sensitivity", "CI", "1 = if black, then NO repulsion, 0 = same repulsions anywhere on mesh", GH_ParamAccess.item, 0.7);
+            pManager.AddNumberParameter("Colour Sensitivity Repulsion", "CIRE", "1 = if black, then NO repulsion, 0 = same repulsions anywhere on mesh", GH_ParamAccess.item, 0.95);
+            pManager.AddNumberParameter("Colour Sensitivity Radius", "CIRA", "1 = if black, then full radius, if white then radius = 0, 0 = radius doesn't change", GH_ParamAccess.item, 0.7);
             pManager.AddBooleanParameter("Reset", "Reset", "Resets the system", GH_ParamAccess.item, true);
         }
 
@@ -83,10 +84,11 @@
             double damping = double.NaN;
             double force = double.NaN;
             bool reset = true;
-            double colourImportance = double.NaN;
+            double colourImportanceRepulsion = double.NaN;
+            double colourImportanceRadius = double.NaN;
 
             // 2. Retrieve input data.
-            if (!DA.GetData(7, ref reset)) { return; }
+            if (!DA.GetData(8, ref reset)) { return; }
             if (reset)
             {
                 this.points = new List<Point3d>();
@@ -102,7 +104,9 @@
             if (!DA.GetData(2, ref mesh)) { return; }
             if (!DA.GetData(3, ref damping)) { return; }
             if (!DA.GetData(4, ref force)) { return; }
-            if (!DA.GetData(6, ref colourImportance)) { return; }
+            if (!DA.GetData(6, ref colourImportanceRepulsion)) { return; }
+            if (!DA.GetData(7, ref colourImportanceRadius)) { return; }
+
 
             // 3. Abort on invalid inputs.
             if (this.points == null) { return; }
@@ -112,7 +116,8 @@
             if (!mesh.IsValid) { return; }
             if (!RhinoMath.IsValidDouble(force)) { return; }
             if (!RhinoMath.IsValidDouble(damping)) { return; }
-            if (!RhinoMath.IsValidDouble(colourImportance)) { return; }
+            if (!RhinoMath.IsValidDouble(colourImportanceRepulsion)) { return; }
+            if (!RhinoMath.IsValidDouble(colourImportanceRadius)) { return; }
 
             // 4. Initialize velocities and points and computate facenormals
             int numPoints = points.Count;
@@ -127,7 +132,7 @@
             List<double> brightnesses = CalculateBrightnessForAllPoints(mesh, numPoints);
 
             // 6. Activate holes
-            List<Hole> holes = CreateHolesWithInitialData(mesh, force, colourImportance, numPoints, brightnesses);
+            List<Hole> holes = CreateHolesWithInitialData(mesh, force, colourImportanceRepulsion, colourImportanceRadius, numPoints, brightnesses);
 
             // 7. Find new location
             foreach (Hole hole in holes)
@@ -176,16 +181,16 @@
         /// </summary>
         /// <param name="mesh">Mesh on which holes are intented to be distributed</param>
         /// <param name="force">The size of the force working between the holes on the mesh.</param>
-        /// <param name="colourSensitivity">Double between 0 and 1 to determine the coloursensitivity of a point</param>
+        /// <param name="colourSensitivityRepulsion">Double between 0 and 1 to determine the coloursensitivity of a point</param>
         /// <param name="numPoints">number of holes on mesh</param>
         /// <param name="brightnesses">list of brightnesses for all points</param>
         /// <returns>List of holes</returns>
-        private List<Hole> CreateHolesWithInitialData(Mesh mesh, double force, double colourSensitivity, int numPoints, List<double> brightnesses)
+        private List<Hole> CreateHolesWithInitialData(Mesh mesh, double force, double colourSensitivityRepulsion, double colourSensitivityRadius, int numPoints, List<double> brightnesses)
         {
             List<Hole> holes = new List<Hole>(numPoints);
             for (int i = 0; i < numPoints; i++)
             {
-                Hole tempHole = new Hole(points[i], velocities[i], mesh, radius[i], force, vertices, brightnesses[i], colourSensitivity);
+                Hole tempHole = new Hole(points[i], velocities[i], mesh, radius[i], force, vertices, brightnesses[i], colourSensitivityRepulsion, colourSensitivityRadius);
                 holes.Add(tempHole);
             }
 
