@@ -38,7 +38,7 @@
             pManager.AddNumberParameter("Colour Sensitivity", "CI", "1 = if black, then NO repulsion, 0 = same repulsions anywhere on mesh", GH_ParamAccess.item, 0.7);
             pManager.AddBooleanParameter("Reset", "Reset", "Resets the system", GH_ParamAccess.item, true);
         }
-        
+
         /// <summary>
         /// Registers output parameters for component
         /// </summary>
@@ -46,6 +46,7 @@
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddPointParameter("Points", "P", "New Points", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Radius", "R", "New radius", GH_ParamAccess.list);
             pManager.AddLineParameter("Acceleration", "A", "Draws lines to represent the acceleration of a point", GH_ParamAccess.list);
             pManager.AddLineParameter("Velocity", "V", "Draws lines to represent to velocity of a point. A good way to check if the system has settled is to attached the following to this output: Curve Length -> Mass Addition -> Data Recorder -> Quick Graph", GH_ParamAccess.list);
             pManager.AddNumberParameter("Brigthnesses", "B", "Current brightness of mesh at location of point", GH_ParamAccess.list);
@@ -110,7 +111,7 @@
             if (this.radius.Count == 0) { return; }
             if (!mesh.IsValid) { return; }
             if (!RhinoMath.IsValidDouble(force)) { return; }
-            if (!RhinoMath.IsValidDouble(damping)) {return;}
+            if (!RhinoMath.IsValidDouble(damping)) { return; }
             if (!RhinoMath.IsValidDouble(colourImportance)) { return; }
 
             // 4. Initialize velocities and points and computate facenormals
@@ -141,10 +142,17 @@
                 this.velocities[i] = holes[i].NewVelocity * damping;
             }
 
-            // 8. Assign lines to output representing acceleration and velocity
+            // 9. Get new radius for output
+            List<double> newRadius = new List<double>(numPoints);
+            for (int i = 0; i < numPoints; i++)
+            {
+                newRadius.Add(holes[i].NewRadius);
+            }
+
+            // 10. Assign lines to output representing acceleration and velocity
             List<Line> accelerations = new List<Line>(numPoints);
             List<Line> velocityLines = new List<Line>(numPoints);
-            for (int i = 0; i < numPoints; i++ )
+            for (int i = 0; i < numPoints; i++)
             {
                 Hole hole = holes[i];
                 Line tempLine = hole.AccelerationAsLine();
@@ -155,11 +163,12 @@
                 velocityLines.Add(tempVelocityLine);
             }
 
-            // 9. Assign output.
+            // 11. Assign output.
             DA.SetDataList(0, points);
-            DA.SetDataList(1, accelerations);
-            DA.SetDataList(2, velocityLines);
-            DA.SetDataList(3, brightnesses);
+            DA.SetDataList(1, newRadius);
+            DA.SetDataList(2, accelerations);
+            DA.SetDataList(3, velocityLines);
+            DA.SetDataList(4, brightnesses);
         }
 
         /// <summary>

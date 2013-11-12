@@ -37,7 +37,7 @@
         /// <param name="tempVertices">All vertices of mesh</param>
         /// <param name="tempBrightness">Brightness of hole</param>
         /// <param name="tempColourSensitivity">Sensitivity of which a colour will affect the force between two points</param>
-        public Hole(Point3d tempPoint, Vector3d tempVelocityVector, Mesh tempMesh, double tempRadius, double tempForce, Point3d[] tempVertices, double tempBrightness , double tempColourSensitivity)
+        public Hole(Point3d tempPoint, Vector3d tempVelocityVector, Mesh tempMesh, double tempRadius, double tempForce, Point3d[] tempVertices, double tempBrightness, double tempColourSensitivity)
         {
             vertices = tempVertices;
             point = tempPoint;
@@ -82,7 +82,7 @@
         {
             this.newAccelerationVector = Vector3d.Zero;
             double minimumDenominatorToAvoidDivideByZero = 5;
-            for (int i = 0; i < others.Count ; i++)
+            for (int i = 0; i < others.Count; i++)
             {
                 Hole other = others[i];
                 Vector3d VectorPointToPointInfluence = other.point - this.point;
@@ -138,13 +138,18 @@
         /// <param name="holes"></param>
         public void CalculateNewLocation(IList<Hole> holes)
         {
+            this.CalculateNewRadius();
             this.CalculateVelocity(holes);
             this.newPoint = this.point + this.newVelocityVector;
             this.meshFullPoint = mesh.ClosestMeshPoint(newPoint, 0.0);
             this.NewLocationCheck(holes, this.point, 1, this.newVelocityVector, mesh.FaceIndexOfClosestPoint(this.point));
         }
 
-        
+        private void CalculateNewRadius()
+        {
+            this.radius = this.radius * (1 - this.brightness) * 1.5;
+        }
+
         int recursionsStopper; //safety variable to avoid endless recursions.
         /// <summary>
         /// If the new location is on another face than the initial one, this method will loop until the final location of the itteretation is found.
@@ -174,7 +179,7 @@
                 }
                 else
                 {
-                    Point3d intersectionPoint = p + velocity * moveParameter*1.01; //multiplied by 1.01 to make sure that it doesn't cross same edge twice
+                    Point3d intersectionPoint = p + velocity * moveParameter * 1.01; //multiplied by 1.01 to make sure that it doesn't cross same edge twice
                     Vector3d RotatedVelocityVector = RotateVectorToNewFace(mesh.FaceNormals[faceIndex], mesh.FaceNormals[getOtherFaceIndex(vertexOneIndex, vertexTwoIndex, faceIndex)], vertices[vertexOneIndex], vertices[vertexTwoIndex], velocity);
                     this.newPoint = intersectionPoint + RotatedVelocityVector * (1 - moveParameter);
                     this.meshFullPoint = mesh.ClosestMeshPoint(newPoint, 0.0);
@@ -198,7 +203,7 @@
         /// <param name="moveParameter"></param>
         private void HasMovedOutsideFace(Point3d pointForMethod, Vector3d velocity, int faceIndex, out bool intersect, out int edgeParameter, out double moveParameter)
         {
-            Line currentVelocity = new Line(pointForMethod,pointForMethod + velocity);
+            Line currentVelocity = new Line(pointForMethod, pointForMethod + velocity);
             List<Plane> planesPerpendicularToFaceEdges = this.CalculatePlanesParallelToFaceEdges(faceIndex);
             intersect = false;
             edgeParameter = 0;
@@ -309,15 +314,15 @@
         /// <returns></returns>
         private Vector3d RotateVectorToNewFace(Vector3d NormalOne, Vector3d NormalTwo, Point3d VertexOne, Point3d VertexTwo, Vector3d VectorToRotate)
         {
-            Double angle = Vector3d.VectorAngle(NormalOne,NormalTwo);
-            Vector3d rotationAxis = VertexOne-VertexTwo;
+            Double angle = Vector3d.VectorAngle(NormalOne, NormalTwo);
+            Vector3d rotationAxis = VertexOne - VertexTwo;
             Vector3d newVector1 = VectorToRotate;
-            newVector1.Rotate(angle, rotationAxis); 
+            newVector1.Rotate(angle, rotationAxis);
             Vector3d newVector2 = VectorToRotate;
             newVector2.Rotate(-angle, rotationAxis);
             double newAngle1 = Vector3d.VectorAngle(NormalTwo, newVector1);
             double newAngle2 = Vector3d.VectorAngle(NormalTwo, newVector2);
-            if (Math.Abs(Math.PI/2 - newAngle1) > Math.Abs(Math.PI/2 - newAngle2))
+            if (Math.Abs(Math.PI / 2 - newAngle1) > Math.Abs(Math.PI / 2 - newAngle2))
             {
                 return newVector2;
             }
@@ -339,7 +344,7 @@
         private Point3d BounceOfBoundary(Point3d basePoint, Vector3d velocity, Point3d vertexOne, Point3d vertexTwo, Vector3d normalOfFace)
         {
             this.newPoint = basePoint + velocity;
-            Point3d mirroredPoint = Transform.Mirror(EdgePlane(vertexOne,vertexTwo,normalOfFace)) * newPoint;
+            Point3d mirroredPoint = Transform.Mirror(EdgePlane(vertexOne, vertexTwo, normalOfFace)) * newPoint;
             this.newVelocityVector = Transform.Mirror(EdgePlane(vertexOne, vertexTwo, normalOfFace)) * velocity;
             return mirroredPoint;
         }
@@ -377,9 +382,9 @@
             int[] facesTwo = mesh.Vertices.GetVertexFaces(vertexTwoIndex);
             List<int> sharedFaces = new List<int>(2);
             int otherFace = -1;
-            for (int i = 0 ; i < facesOne.Length ; i++)
+            for (int i = 0; i < facesOne.Length; i++)
             {
-                for (int j = 0 ; j < facesTwo.Length ; j++)
+                for (int j = 0; j < facesTwo.Length; j++)
                 {
                     if (facesOne[i] == facesTwo[j])
                     {
@@ -409,13 +414,13 @@
         /// returns Meshpoint
         /// </summary>
         public Point3d Point
+        {
+            get
             {
-                get
-                {
-                    return meshFullPoint.Point;
-                }
+                return meshFullPoint.Point;
             }
-        
+        }
+
         /// <summary>
         /// Returns the velocity
         /// </summary>
@@ -424,6 +429,14 @@
             get
             {
                 return newVelocityVector;
+            }
+        }
+
+        public double NewRadius
+        {
+            get
+            {
+                return this.radius;
             }
         }
 
