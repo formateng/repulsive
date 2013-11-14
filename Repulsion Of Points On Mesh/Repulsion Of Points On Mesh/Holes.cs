@@ -111,7 +111,8 @@
 
         private Vector3d AdjustAccelerationForColourSensitivity(Vector3d vectorBetweenPoints, Hole other)
         {
-            return (1 - this.colourSensitivityRepulsion) * vectorBetweenPoints + this.colourSensitivityRepulsion * other.brightness * vectorBetweenPoints;
+            //return (1 - this.colourSensitivityRepulsion) * vectorBetweenPoints + this.colourSensitivityRepulsion * 1/(1-other.brightness) * vectorBetweenPoints;
+            return (1 - this.colourSensitivityRepulsion) * vectorBetweenPoints + this.colourSensitivityRepulsion * other.brightness * other.brightness * vectorBetweenPoints;
         }
 
         /// <summary>
